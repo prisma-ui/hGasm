@@ -265,26 +265,25 @@ export async function scrapeDetail(slug: string): Promise<VideoDetail> {
     }
   });
 
-  // Stats — inside the duplicate #post-NNN stats block inside #details
-  const statsBlock = $("#details .stats").first();
+  // Stats — ada di dalam .item.cf.item-post di luar #details (bukan di dalam #details)
+  const statsBlock = $(".item.cf .stats").first();
   const views = statsBlock.find(".views i.count").text().trim();
   const comments = statsBlock.find(".comments i.count").text().trim();
   const likes = statsBlock.find(".likes i.count").text().trim();
 
-  // Download link — <a href="https://{DOWNLOAD_CDN_HOST}/...mp4" download>
+  // Download link — cari a[download] dari VIDEO_CDN_HOST atau fallback attr download
   const downloadAnchor = DOWNLOAD_CDN_HOST
-    ? $(`a[href*="${DOWNLOAD_CDN_HOST}"]`).first()
+    ? $(`a[href*="${DOWNLOAD_CDN_HOST}"][download], a[href*="${DOWNLOAD_CDN_HOST}"].btn`)
+        .first()
     : $("a[download]").first();
   const downloadUrl = downloadAnchor.attr("href") ?? null;
 
-  // Video source — VIDEO_CDN_HOST (cdn2)
-  // src bisa di <video src="..."> langsung ATAU di <source src="...">
+  // Video source — src ada di <source src="..."> di dalam <video id="my-video">
   const videoEl = $("video#my-video").first();
-  const videoSrc =
+  const videoSrc: string | null =
+    videoEl.find("source[src]").first().attr("src") ??
     videoEl.attr("src") ??
-    videoEl.find("source").first().attr("src") ??
-    $("video source").first().attr("src") ??
-    $("video").first().attr("src") ??
+    $("video source[src]").first().attr("src") ??
     null;
 
   const iframe = $("iframe").first();
