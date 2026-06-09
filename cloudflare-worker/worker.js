@@ -1,30 +1,13 @@
 /**
- * Cloudflare Worker — forward proxy for the target site.
+ * Cloudflare Worker — forward proxy (plain JS, paste-ready for dashboard)
  *
- * Deploy:
- *   cd cloudflare-worker
- *   npx wrangler deploy
- *
- * Usage (called by Next.js server via PROXY_URL env var):
- *   GET https://your-worker.workers.dev/?url=https%3A%2F%2F<TARGET_BASE_URL>%2F...
- *
- * The worker:
- *   1. Forwards the request to the target URL with browser-like headers
- *   2. Strips CF bot-detection response headers
- *   3. Returns the raw HTML to the caller
- *
- * Required wrangler env vars (set in wrangler.toml [vars] or via wrangler secret):
+ * Required env vars (set via Settings > Variables in dashboard):
  *   TARGET_BASE_URL      e.g. https://example.com
- *   ALLOWED_CDN_HOSTS    comma-separated CDN hostnames, e.g. cdn1.example.com,cdn2.example.com
+ *   ALLOWED_CDN_HOSTS    comma-separated, e.g. cdn1.example.com,cdn2.example.com
  */
 
-interface Env {
-  TARGET_BASE_URL: string;      // e.g. "https://example.com"
-  ALLOWED_CDN_HOSTS: string;    // e.g. "cdn1.example.com,cdn2.example.com"
-}
-
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request, env) {
     const { searchParams } = new URL(request.url);
     const target = searchParams.get("url");
 
@@ -80,4 +63,4 @@ export default {
       headers,
     });
   },
-} satisfies ExportedHandler<Env>;
+};
