@@ -9,10 +9,12 @@ import type {
 import { fetchPage, BASE_URL } from "./fetch";
 
 // Domain used to filter out ad cards (external links)
-const SITE_HOST = new URL(BASE_URL).hostname; // e.g. "hentaigasm.com"
+const SITE_HOST = new URL(BASE_URL).hostname;
 
-// CDN host used for download links — set via env var DOWNLOAD_CDN_HOST
-const DOWNLOAD_CDN_HOST = process.env.DOWNLOAD_CDN_HOST ?? "";
+// CDN hosts — each serves a different asset type
+const IMAGE_CDN_HOST    = process.env.IMAGE_CDN_HOST    ?? ""; // thumbnails/previews
+const VIDEO_CDN_HOST    = process.env.VIDEO_CDN_HOST    ?? ""; // video stream src
+const DOWNLOAD_CDN_HOST = process.env.DOWNLOAD_CDN_HOST ?? ""; // download button
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -57,8 +59,12 @@ function parseCards($: cheerio.CheerioAPI): VideoCard[] {
     const item = $(el);
 
     // Title anchor — h2.title or h4.title (footer widgets use h4)
+    // Use text() first; attr("title") contains "Permalink to XXX" so strip prefix
     const anchor = item.find(".title a").first();
-    const title = anchor.attr("title") ?? anchor.text().trim();
+    const rawAttrTitle = anchor.attr("title") ?? "";
+    const title =
+      anchor.text().trim() ||
+      rawAttrTitle.replace(/^Permalink to\s*/i, "").trim();
     const url = anchor.attr("href") ?? item.find("a.clip-link").attr("href") ?? "";
 
     // Skip ad cards (external links not on the main site)
@@ -224,7 +230,8 @@ export async function scrapeHentaiSeries(
  *   Views:         #details .stats .views i.count
  *   Comments:      #details .stats .comments i.count
  *   Likes:         #details .stats .likes i.count
- *   Download:      a[href*=DOWNLOAD_CDN_HOST] or a[download]
+ *   Video src:     video#my-video[src] → video#my-video source[src] (fallback)
+ *   Download:      a[href*=DOWNLOAD_CDN_HOST] or a[download] (same CDN as video)
  *   Video src:     video#my-video source[src]
  *   Related:       .related-posts div.item.cf  (same parseCards logic)
  */
@@ -270,10 +277,16 @@ export async function scrapeDetail(slug: string): Promise<VideoDetail> {
     : $("a[download]").first();
   const downloadUrl = downloadAnchor.attr("href") ?? null;
 
-  // Video source — <video id="my-video"><source src="...">
+  // Video source — VIDEO_CDN_HOST (cdn2)
+  // src bisa di <video src="..."> langsung ATAU di <source src="...">
+  const videoEl = $("video#my-video").first();
   const videoSrc =
-    $("video#my-video source").first().attr("src") ??
-    $("video source").first().attr("src");
+    videoEl.attr("src") ??
+    videoEl.find("source").first().attr("src") ??
+    $("video source").first().attr("src") ??
+    $("video").first().attr("src") ??
+    null;
+
   const iframe = $("iframe").first();
   let embedHtml: string | null = null;
   if (iframe.length) {

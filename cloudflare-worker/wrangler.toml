@@ -6,8 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 # Required env vars — fill these in before deploying
 # Or set secrets via: npx wrangler secret put TARGET_BASE_URL
 [vars]
-TARGET_BASE_URL = ""       # e.g. https://example.com
-ALLOWED_CDN_HOSTS = ""     # e.g. cdn1.example.com,cdn2.example.com
+TARGET_BASE_URL   = ""  # e.g. https://example.com
+IMAGE_CDN_HOST    = ""  # e.g. cdn1.example.com  (thumbnails/previews)
+VIDEO_CDN_HOST    = ""  # e.g. cdn2.example.com  (video stream)
+DOWNLOAD_CDN_HOST = ""  # e.g. cdn3.example.com  (download button)
 
 # Optionally pin to a specific region for lower latency
 # [placement]
