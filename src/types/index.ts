@@ -24,7 +24,7 @@ export interface VideoDetail {
   likes: string;
   comments: string;
   downloadUrl: string | null; // hgasm3.com direct mp4 link
-  embedHtml: string | null;   // raw iframe/video embed HTML if present
+  videoUrl: string | null;    // hgasm2.com direct mp4 URL (video stream)
   relatedVideos: VideoCard[];
 }
 

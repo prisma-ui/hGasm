@@ -281,36 +281,33 @@ export async function scrapeDetail(slug: string): Promise<VideoDetail> {
   // Video source — desktop theme pakai JW Player, src ada di script:
   //   jwplayer("player_01").setup({ file: "https://hgasm2.com/....mp4", ... })
   // Mobile theme pakai Fluid Player dengan <video><source src="...">
-  // Coba keduanya dengan urutan prioritas.
+  // Scope ke .entry-content agar tidak match script dari widget/footer.
   let videoSrc: string | null = null;
 
-  // 1. JW Player setup script — cari file: "..." atau file:"..."
-  $("script:not([src])").each((_, el) => {
+  // 1. JW Player setup script — scope ke .entry-content
+  $(".entry-content script:not([src])").each((_, el) => {
     if (videoSrc) return;
     const scriptContent = $(el).html() ?? "";
     if (!scriptContent.includes("jwplayer")) return;
-    const match = scriptContent.match(/["\']file["\']\s*:\s*["\'](https?:\/\/[^"']+\.mp4[^"']*)["\']/) ??
-                  scriptContent.match(/file\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)['"]/);
+    const match =
+      scriptContent.match(/["']file["']\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)['"]/i) ??
+      scriptContent.match(/file\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)['"]/i);
     if (match?.[1]) videoSrc = match[1];
   });
 
-  // 2. Fluid Player — <video id="my-video"><source src="...">
+  // 2. Fluid Player — <video id="my-video"><source src="..."> (mobile theme)
   if (!videoSrc) {
     const videoEl = $("video#my-video").first();
     videoSrc =
       videoEl.find("source[src]").first().attr("src") ??
       videoEl.attr("src") ??
-      $("video source[src]").first().attr("src") ??
+      $(".entry-content video source[src]").first().attr("src") ??
       null;
   }
 
   const iframe = $("iframe").first();
-  let embedHtml: string | null = null;
-  if (iframe.length) {
-    embedHtml = $.html(iframe);
-  } else if (videoSrc) {
-    embedHtml = `<video src="${videoSrc}" controls></video>`;
-  }
+  const iframeUrl: string | null = iframe.attr("src") ?? null;
+  const videoUrl: string | null = videoSrc ?? iframeUrl;
 
   // Related videos — .related-posts section uses same div.item.cf structure
   const relatedCards = parseCards($).filter(
@@ -329,7 +326,7 @@ export async function scrapeDetail(slug: string): Promise<VideoDetail> {
     likes,
     comments,
     downloadUrl,
-    embedHtml,
+    videoUrl,
     relatedVideos: relatedCards,
   };
 }
